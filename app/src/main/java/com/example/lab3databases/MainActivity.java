@@ -11,7 +11,6 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -59,7 +58,6 @@ public class MainActivity extends AppCompatActivity {
                 productName.setText("");
                 productPrice.setText("");
 
-//                Toast.makeText(MainActivity.this, "Add product", Toast.LENGTH_SHORT).show();
                 viewProducts();
             }
         });
@@ -67,14 +65,44 @@ public class MainActivity extends AppCompatActivity {
         findBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "Find product", Toast.LENGTH_SHORT).show();
+                String name = productName.getText().toString();
+                double price;
+
+                try {
+                    price = Double.parseDouble(productPrice.getText().toString());
+                }
+                catch (NumberFormatException e) {
+                    price = -1;
+                }
+
+                // If user does not enter a product name or price, do nothing
+                if (name.equals("") && price == -1) {
+                    viewProducts();
+                }
+                else {
+                    Product product = new Product(name, price);
+                    viewProducts(dbHandler.findProduct(product));
+                }
+
+                productName.setText("");
+                productPrice.setText("");
             }
         });
 
         deleteBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(MainActivity.this, "Delete product", Toast.LENGTH_SHORT).show();
+                String name = productName.getText().toString();
+
+                // Use a placeholder for price because we can ignore price for simplicity
+                Product product = new Product(name, -1);
+
+                dbHandler.deleteProduct(product);
+
+                productName.setText("");
+                productPrice.setText("");
+
+                viewProducts();
             }
         });
 
@@ -90,6 +118,24 @@ public class MainActivity extends AppCompatActivity {
         } else {
             while (cursor.moveToNext()) {
                 productList.add(cursor.getString(1) + " (" +cursor.getString(2)+")");
+            }
+        }
+
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, productList);
+        productListView.setAdapter(adapter);
+    }
+
+    // This method displays a specific subset of products in the database
+    private void viewProducts(ArrayList<Product> products) {
+        productList.clear();
+
+        if (products.size() == 0) {
+            Toast.makeText(MainActivity.this, "Cannot find product in database", Toast.LENGTH_SHORT).show();
+            viewProducts();
+        }
+        else {
+            for (int i = 0; i < products.size(); i++) {
+                productList.add(products.get(i).getProductName() + " (" + String.valueOf(products.get(i).getProductPrice()) + ")");
             }
         }
 

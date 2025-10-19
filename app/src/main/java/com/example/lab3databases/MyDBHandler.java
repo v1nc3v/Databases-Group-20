@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import java.util.ArrayList;
 
 public class MyDBHandler extends SQLiteOpenHelper {
     private static final String TABLE_NAME = "products";
@@ -49,6 +50,77 @@ public class MyDBHandler extends SQLiteOpenHelper {
         values.put(COLUMN_PRODUCT_PRICE, product.getProductPrice());
 
         db.insert(TABLE_NAME, null, values);
+        db.close();
+    }
+
+    // This method finds and returns a list of matching products in the database
+    public ArrayList<Product> findProduct(Product product) {
+        ArrayList<Product> products = new ArrayList<>();
+        String name = product.getProductName();
+        double price = product.getProductPrice();
+        Cursor cursor = getData();
+
+        String productName;
+        double productPrice;
+
+        // If price was not entered, show products that start with the name
+        if (price == -1) {
+            if (cursor.moveToFirst()) {
+                do {
+                    productName = cursor.getString(1);
+                    productPrice = cursor.getDouble(2);
+
+                    // Check if product in database starts with the name inputted (not case sensitive)
+                    if (productName.toUpperCase().startsWith(name.toUpperCase())) {
+                        products.add(new Product(productName, productPrice));
+                    }
+                }
+                while (cursor.moveToNext());
+            }
+        }
+
+        // If name was not entered, show products that have the exact price
+        else if (product.getProductName().equals("")){
+            if (cursor.moveToFirst()) {
+                do {
+                    productName = cursor.getString(1);
+                    productPrice = cursor.getDouble(2);
+
+                    // Check if product in database has a matching price
+                    if (productPrice == price) {
+                        products.add(new Product(productName, productPrice));
+                    }
+                }
+                while (cursor.moveToNext());
+            }
+        }
+
+        // If both values were entered, show products that start with the name and have the exact price
+        else {
+            if (cursor.moveToFirst()) {
+                do {
+                    productName = cursor.getString(1);
+                    productPrice = cursor.getDouble(2);
+
+                    // Check if product in database starts with the name and has a matching price
+                    if (productName.toUpperCase().startsWith(name.toUpperCase()) && productPrice == price) {
+                        products.add(new Product(productName, productPrice));
+                    }
+                }
+                while (cursor.moveToNext());
+            }
+        }
+
+        cursor.close();
+        return products;
+    }
+
+    public void deleteProduct(Product product) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        String name = product.getProductName();
+
+        // Delete any products in the database with the exact same name (is case sensitive)
+        db.delete(TABLE_NAME, COLUMN_PRODUCT_NAME + "=?", new String[]{name});
         db.close();
     }
 }
